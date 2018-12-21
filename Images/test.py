@@ -47,31 +47,23 @@ lower = {
 upper = {'blue': (150, 255, 255), 'yellow': (54, 255, 255)}
 
 # define standard colors for circle around the object
-colors = {'blue': (255, 0, 0), 'yellow': (0, 255, 217),'cursor':(50, 50, 50)}
+colors = {'blue': (255, 0, 0), 'yellow': (0, 255, 217)}
 
 #  webcam
 camera = cv2.VideoCapture(0)
-
-sprayBlue=cv2.imread("Images/spray (Blue).png")
-sprayBlue=cv2.resize(sprayBlue, (42, 42)) 
-#cv2.imshow("hello",sprayBlue)
-
 
 p1 = [0, 0]
 p2 = [0, 0]
 radius = [0, 0]
 firstTime = True
 drawSize=15
-
 while True:
     # grab the current frame
     (grabbed, frame) = camera.read()
 
     frame = cv2.flip(frame, 1)
     CursorImg = np.array(frame)
-    rows,cols,channels=CursorImg.shape
     CursorImg[:] = 0
-    CursorImg[ (rows-42) : rows , int(cols/2)-42 : (int(cols/2)) ]=sprayBlue
     if firstTime:
         vertualPaper = np.array(frame)
         vertualPaper[:] = 255
@@ -102,8 +94,8 @@ while True:
 
     #cursor
     if dist < 70:
-        cv2.line(CursorImg,(midX+10,midY),(midX-10,midY),colors["cursor"],2)
-        cv2.line(CursorImg,(midX,midY+10),(midX,midY-10),colors["cursor"],2)
+        cv2.line(CursorImg,(midX+10,midY),(midX-10,midY),colors["yellow"],2)
+        cv2.line(CursorImg,(midX,midY+10),(midX,midY-10),colors["yellow"],2)
     #draw
     if dist < 50:
         cv2.circle(vertualPaper ,middel(p1, p2), drawSize, colors["blue"],-1)
