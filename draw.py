@@ -41,23 +41,59 @@ def detectColor(key, hsv, frame):
     return (x, y, radius)
 
 
-def delayAnimationColors(shiftStop):
+def toolAnimation(shiftStop,up):
     global shift
-    if shift + 1 < shiftStop:
-        shift += 1
-    else:
-        shift = shiftStop
+    if up:
+        if shift < shiftStop:
+            shift += 1
+        else:
+            shift = shiftStop
+    else :
+        if shift > shiftStop:
+            shift -= 1
+        else:
+            shift = shiftStop
 
 
-def delayAnimationSelectColor():
-    global endArc
+def selectFromToolAnimation():
+    global endArc,p2
     global CursorImg
     if endArc + 1 < 360:
         endArc += 1
     else:
         endArc = 360
-    cv2.ellipse(CursorImg, (256, 256), (50, 50), 0, 0, endArc, 255, 2)
+    cv2.ellipse(CursorImg, (p2[0], p2[1]), (10, 10), 0, 0, endArc, 255, 2)
 
+
+def selectedColor(midX,midY,rows,cols):
+    global toolHight,offset,shift,ToolAnimInterval
+    # print(rows-toolHight)
+    # print(cols)
+    selectedcolor=-1
+    if midY>rows-toolHight and  midX>=offset and midX<=cols-offset :
+
+        if shift==5 :
+            #print("start up Animation")                
+            if  ToolAnimInterval!=None :
+                ToolAnimInterval.cancel()
+            ToolAnimInterval = setI.setInterval(0.02, toolAnimation, *(toolHight,True))
+            t = threading.Timer(1.5, ToolAnimInterval.cancel)
+            t.start()
+
+        elif shift==toolHight :                
+            selectedcolor=int((midX-offset)/toolHight)
+            #print("selected color "+str(selectedcolor))
+
+    elif shift==toolHight :
+        #print("start dawn Animation")
+        if ToolAnimInterval!=None :
+            ToolAnimInterval.cancel()
+        ToolAnimInterval = setI.setInterval(0.02, toolAnimation, *(5,False))
+        t = threading.Timer(1.5, ToolAnimInterval.cancel)
+        t.start()
+
+    return selectedcolor
+            
 
 # define the lower and upper boundaries of the colors in the HSV color space
 lower = {'blue': (70, 80, 117), 'yellow': (23, 40, 80)}
@@ -71,22 +107,22 @@ colors = {'blue': (255, 0, 0), 'yellow': (0, 255, 217), 'cursor': (50, 50, 50)}
 #  webcam
 camera = cv2.VideoCapture(0)
 # tool bar
-sprayBlue = cv2.imread("Images/tools.png")
-sprayBlue = cv2.resize(sprayBlue, (0, 0), fx=0.3, fy=0.3)
-hight, width, ggg = sprayBlue.shape
+sprayColor = cv2.imread("Images/tools.png")
+sprayColor = cv2.resize(sprayColor, (0, 0), fx=0.3, fy=0.3)
+toolHight, toolWidth, X = sprayColor.shape
 
 p1 = [0, 0]
 p2 = [0, 0]
 radius = [0, 0]
 firstTime = True
 drawSize = 15
-shift = 0
+shift = 5
 offset = 117
 endArc = 0
-
-inter = setI.setInterval(0.04, delayAnimationColors, hight)
-t = threading.Timer(10, inter.cancel)
-t.start()
+ToolAnimInterval= None
+SelectNewColorAnimInterval= None
+selectedcolor=-1
+TempSelectedcolor=-1
 
 while True:
     # grab the current frame
@@ -98,17 +134,16 @@ while True:
     CursorImg[:] = 0
 
     CursorImg[(rows - shift):rows, offset:cols -
-              offset] = sprayBlue[0:shift, 0:width]
+              offset] = sprayColor[0:shift, 0:toolWidth]
 
     if firstTime:
         vertualPaper = np.array(frame)
         vertualPaper[:] = 255
         firstTime = False
-
-        inter = setI.setInterval(0.008, delayAnimationSelectColor)
-        t = threading.Timer(3, inter.cancel)
-        t.start()
-
+        # inter = setI.setInterval(0.008, selectFromToolAnimation)
+        # t = threading.Timer(3, inter.cancel)
+        # t.start()
+    
     # color space
     blurred = cv2.GaussianBlur(frame, (11, 11), 0)
     hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
@@ -120,19 +155,15 @@ while True:
 
     # only proceed if the radius meets a minimum size. Correct this value for your obect's size
     if radius[0] > 0.5:
-        # draw the circle and centroid on the frame,
-        # then update the list of tracked points
+        # draw the circle on the frame,        
         cv2.circle(frame, (p1[0], p1[1]), radius[0], colors["blue"], 2)
-        cv2.putText(frame, str(distance(p1, p2)),
-                    (p1[0] - radius[0], p1[1] - radius[0]),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.4, colors["blue"], 2)
+                
     if radius[1] > 0.5:
-
         cv2.circle(frame, (p2[0], p2[1]), radius[1], colors["yellow"], 2)
 
     dist = distance(p1, p2)
     midX, midY = middel(p1, p2)
-
+        
     # cursor
     if dist < 70:
         cv2.line(CursorImg, (midX + 10, midY), (midX - 10, midY),
@@ -143,6 +174,27 @@ while True:
     if dist < 50:
         cv2.circle(vertualPaper, middel(p1, p2), drawSize, colors["blue"], -1)
 
+    #verify if the user is choosing another color
+    NewSelectedcolor=selectedColor(p2[0], p2[1],rows, cols)
+    if NewSelectedcolor!=selectedcolor:
+        if shift==toolHight:
+            if NewSelectedcolor!=TempSelectedcolor:
+                endArc=0
+                TempSelectedcolor=NewSelectedcolor
+
+                if SelectNewColorAnimInterval!=None:
+                    SelectNewColorAnimInterval.cancel()                
+                SelectNewColorAnimInterval = setI.setInterval(0.004, selectFromToolAnimation)
+                t = threading.Timer(1.5, SelectNewColorAnimInterval.cancel)
+                t.start()
+            else:
+                if endArc==360:
+                    selectedcolor=TempSelectedcolor
+                    print(selectedcolor)
+        else :
+            if SelectNewColorAnimInterval!=None:
+                SelectNewColorAnimInterval.cancel() 
+                SelectNewColorAnimInterval=None 
     # Draw cursor
     rows, cols, channels = CursorImg.shape
     # Now create a mask of the cursor and create its inverse mask also
@@ -155,7 +207,7 @@ while True:
     img2_fg = cv2.bitwise_and(CursorImg, CursorImg, mask=mask)
     # Put cursor in vertualPaper
     result = cv2.add(img1_bg, img2_fg)
-
+    
     cv2.imshow("Frame", frame)
     cv2.imshow("Frame2", result)
 

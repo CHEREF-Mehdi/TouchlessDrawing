@@ -12,8 +12,8 @@ class setInterval:
         thread.start()
 
     def __setInterval(self):
-        nextTime = time.time()+self.interval
-        while not self.stopEvent.wait(nextTime-time.time()):
+        nextTime = time.time() + self.interval
+        while not self.stopEvent.wait(nextTime - time.time()):
             nextTime += self.interval
             self.action(*self.args)
 
