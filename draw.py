@@ -55,15 +55,15 @@ def toolAnimation(shiftStop,up):
             shift = shiftStop
 
 
-def selectFromToolAnimation():
-    global endArc,p2
-    global CursorImg
-    if endArc + 1 < 360:
+def selectFromToolAnimation(x,y):
+    global endArc,p2,CursorImg,okay
+
+    if endArc < 360:
         endArc += 1
+        cv2.ellipse(CursorImg, (p2[0], p2[1]), (10, 10), 0, 0, endArc, 255, 2)
     else:
         endArc = 360
-    cv2.ellipse(CursorImg, (p2[0], p2[1]), (10, 10), 0, 0, endArc, 255, 2)
-
+        CursorImg[p2[1]-11:p2[1]+12,p2[0]-11:p2[0]+12]=okay
 
 def selectedColor(midX,midY,rows,cols):
     global toolHight,offset,shift,ToolAnimInterval
@@ -110,6 +110,9 @@ camera = cv2.VideoCapture(0)
 sprayColor = cv2.imread("Images/tools.png")
 sprayColor = cv2.resize(sprayColor, (0, 0), fx=0.3, fy=0.3)
 toolHight, toolWidth, X = sprayColor.shape
+
+okay = cv2.imread("Images/ok.png")
+okay = cv2.resize(okay, (0, 0), fx=0.09, fy=0.09)
 
 p1 = [0, 0]
 p2 = [0, 0]
@@ -184,8 +187,8 @@ while True:
 
                 if SelectNewColorAnimInterval!=None:
                     SelectNewColorAnimInterval.cancel()                
-                SelectNewColorAnimInterval = setI.setInterval(0.004, selectFromToolAnimation)
-                t = threading.Timer(1.5, SelectNewColorAnimInterval.cancel)
+                SelectNewColorAnimInterval = setI.setInterval(0.004, selectFromToolAnimation,*(p2[0], p2[1]))
+                t = threading.Timer(1.8, SelectNewColorAnimInterval.cancel)
                 t.start()
             else:
                 if endArc==360:
@@ -195,6 +198,7 @@ while True:
             if SelectNewColorAnimInterval!=None:
                 SelectNewColorAnimInterval.cancel() 
                 SelectNewColorAnimInterval=None 
+
     # Draw cursor
     rows, cols, channels = CursorImg.shape
     # Now create a mask of the cursor and create its inverse mask also
