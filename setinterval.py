@@ -18,5 +18,4 @@ class setInterval:
             self.action(*self.args)
 
     def cancel(self):
-        print('canceled')
         self.stopEvent.set()
