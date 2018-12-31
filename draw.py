@@ -56,6 +56,13 @@ def toolAnimation(shiftStop,up):
         else:
             shift = shiftStop
 
+def selectBackground(Nbackground):
+    global endArc,p2,application
+
+    if endArc < 360:
+        endArc += 1
+        cv2.ellipse(application, (720, 120*(Nbackground+1)+60), (30, 30), 0, 0, endArc, 255, 2)
+
 def selectFromToolAnimation():
     global endArc,p2,CursorImg,okay
 
@@ -118,15 +125,36 @@ okay = cv2.resize(okay, (0, 0), fx=0.09, fy=0.09)
 touchless = cv2.imread("touchless.jpg")
 touchless = cv2.resize(touchless, (0, 0), fx=0.99, fy=0.99)
 
+blanc=np.zeros((480,640,3), np.uint8)
+blanc[:] = 255
+
 papillon=cv2.imread("papillon.jpg")
 papillon_Min=cv2.resize(papillon, (0, 0), fx=0.25, fy=0.25)
+blanc[25:458,20:620]=papillon
+papillon=blanc
 
-bird=cv2.imread("animaux.jpg")
+blanc=np.zeros((480,640,3), np.uint8)
+blanc[:] = 255
+
+bird=cv2.imread("animaux_mini.jpg")
 bird_Min=cv2.resize(bird, (0, 0), fx=0.155, fy=0.155)
+bird=cv2.imread("animaux.jpg")
+blanc[0:480,80:560]=bird
+bird=blanc
 
-complexe=cv2.imread("complex.jpg")
+blanc=np.zeros((480,640,3), np.uint8)
+blanc[:] = 255
+
+complexe=cv2.imread("complex_mini.jpg")
 complexe_Min=cv2.resize(complexe, (0, 0), fx=0.155, fy=0.155)
-print(complexe_Min.shape)
+complexe=cv2.imread("complex.jpg")
+blanc[0:480,80:560]=complexe
+complexe=blanc
+
+blanc=np.zeros((480,640,3), np.uint8)
+blanc[:] = 255
+
+papers=[blanc,papillon,bird,complexe]
 
 p1 = [0, 0]
 p2 = [0, 0]
@@ -138,11 +166,22 @@ offset = 117
 endArc = 0
 ToolAnimInterval= None
 SelectNewColorAnimInterval= None
+backgroundAnimInterval= None
 selectedcolor=0
 TempSelectedcolor=0
+background=0
+TempBackground=-1
+
+def menu():
+    cv2.rectangle(application,(640,120),(800,240),(255,255,255),-1)
+    application[244:352,645:795]=papillon_Min
+    application[362:480,665:783]=bird_Min
+    application[482:598,665:781]=complexe_Min
 
 application = np.zeros((600,800,3), np.uint8)
 application[:]=255
+
+menu()
 
 while True:
     # grab the current frame
@@ -158,8 +197,7 @@ while True:
               offset] = sprayTool[0:shift, 0:toolWidth]
 
     if firstTime:
-        vertualPaper = np.array(frame)
-        vertualPaper[:] = 255
+        vertualPaper = papers[background]
         firstTime = False
         
     # color space
@@ -220,6 +258,48 @@ while True:
             if SelectNewColorAnimInterval!=None:
                 SelectNewColorAnimInterval.cancel() 
                 SelectNewColorAnimInterval=None 
+                endArc=0
+    
+    #check if the user changed the drawing backgroud
+    if dist> 50 and p2[0]>600 :
+        if p2[1]<=120:
+            NewBackground=0
+        elif p2[1]<=240:
+            NewBackground=1
+        elif p2[1]<=360:
+            NewBackground=2
+        else:
+            NewBackground=3
+                          
+        if NewBackground!=TempBackground:
+            if backgroundAnimInterval!=None:
+                backgroundAnimInterval.cancel() 
+
+            menu()
+            endArc=0
+            TempBackground=NewBackground
+                           
+            backgroundAnimInterval = setI.setInterval(0.012, selectBackground,NewBackground)
+            t = threading.Timer(4.4, backgroundAnimInterval.cancel)
+            t.start()
+        else:
+            if endArc==360:
+                background=TempBackground  
+                firstTime=True
+                menu()                     
+                TempBackground=-1
+            
+
+    else :
+        if backgroundAnimInterval!=None:
+            backgroundAnimInterval.cancel() 
+            backgroundAnimInterval=None 
+            endArc=0
+            menu()
+            TempBackground=-1
+
+        
+
 
     # Draw cursor
     rows, cols, channels = CursorImg.shape
@@ -233,9 +313,6 @@ while True:
     img2_fg = cv2.bitwise_and(CursorImg, CursorImg, mask=mask)
     # Put cursor in vertualPaper
     result = cv2.add(img1_bg, img2_fg)
-    
-    # cv2.imshow("Frame", frame)
-    # cv2.imshow("Frame2", result)
     
 
     video = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
@@ -251,12 +328,10 @@ while True:
     cv2.rectangle(application,(640,240),(800,360),(0,0,0),1)
     cv2.rectangle(application,(640,360),(800,480),(0,0,0),1)
 
-    application[244:352,645:795]=papillon_Min
-    application[362:480,665:783]=bird_Min
-    application[482:598,665:781]=complexe_Min
+    
     
 
-    cv2.imshow("blanc", application)
+    cv2.imshow("Touchless Drawing Application", application)
 
     key = cv2.waitKey(1) & 0xFF
     # if the 'q' key is pressed, stop the loop
