@@ -57,11 +57,13 @@ def toolAnimation(shiftStop,up):
             shift = shiftStop
 
 def selectBackground(Nbackground):
-    global endArc,p2,application
-
+    global endArc,application
+    x=720
+    y=120*(Nbackground+1)+60
     if endArc < 360:
         endArc += 1
-        cv2.ellipse(application, (720, 120*(Nbackground+1)+60), (30, 30), 0, 0, endArc, 255, 2)
+        cv2.ellipse(application, (x, y), (30, 30), 0, 0, endArc, 255, 2)
+
 
 def selectFromToolAnimation():
     global endArc,p2,CursorImg,okay
@@ -101,6 +103,11 @@ def selectedColor(distance,rows,cols):
 
     return selectedcolor
             
+def menu():
+    cv2.rectangle(application,(640,120),(800,240),(255,255,255),-1)
+    application[244:352,645:795]=papillon_Min
+    application[362:480,665:783]=bird_Min
+    application[482:598,665:781]=complexe_Min
 
 # define the lower and upper boundaries of the colors in the HSV color space
 lower = {'blue': (70, 80, 117), 'yellow': (23, 40, 80)}
@@ -172,11 +179,6 @@ TempSelectedcolor=0
 background=0
 TempBackground=-1
 
-def menu():
-    cv2.rectangle(application,(640,120),(800,240),(255,255,255),-1)
-    application[244:352,645:795]=papillon_Min
-    application[362:480,665:783]=bird_Min
-    application[482:598,665:781]=complexe_Min
 
 application = np.zeros((600,800,3), np.uint8)
 application[:]=255
@@ -190,16 +192,24 @@ while True:
     frame = cv2.flip(frame, 1)
     CursorImg = np.array(frame)
     rows, cols, channels = CursorImg.shape
-    
+
     CursorImg[:] = 0
+
 
     CursorImg[(rows - shift):rows, offset:cols -
               offset] = sprayTool[0:shift, 0:toolWidth]
 
-    if firstTime:
-        vertualPaper = papers[background]
+    
+    
+    if firstTime:        
         firstTime = False
-        
+        papers[0][:]=255
+        vertualPaper = papers[background]
+        if background!=0 :
+            drawSize=5
+        else :
+            drawSize=8
+
     # color space
     blurred = cv2.GaussianBlur(frame, (11, 11), 0)
     hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
@@ -233,8 +243,8 @@ while True:
         # draw
         if dist < 50:
             cv2.circle(vertualPaper, middel(p1, p2), drawSize, sprayColor[selectedcolor], -1)
-
-    #print(dist)
+    
+    vertualPaper = papers[background]
 
     #verify if the user is choosing another color
     NewSelectedcolor=selectedColor(dist,rows, cols)
@@ -280,7 +290,7 @@ while True:
             TempBackground=NewBackground
                            
             backgroundAnimInterval = setI.setInterval(0.012, selectBackground,NewBackground)
-            t = threading.Timer(4.4, backgroundAnimInterval.cancel)
+            t = threading.Timer(5.4, backgroundAnimInterval.cancel)
             t.start()
         else:
             if endArc==360:
