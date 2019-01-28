@@ -1,2 +1,2 @@
-# VirtualDrawing
-Virtual drawing application using python and openCV
+# Touchless Drawing
+Touchless drawing application using python and openCV
