@@ -66,20 +66,20 @@ def selectBackground(Nbackground):
 
 
 def selectFromToolAnimation():
-    global endArc,p2,CursorImg,okay
+    global endArc,p1,CursorImg,okay
 
     if endArc < 360:
         endArc += 1
-        cv2.ellipse(CursorImg, (p2[0], p2[1]), (10, 10), 0, 0, endArc, 255, 2)    
+        cv2.ellipse(CursorImg, (p1[0], p1[1]), (10, 10), 0, 0, endArc, 255, 2)    
     else :
-        CursorImg[p2[1]-11:p2[1]+12,p2[0]-11:p2[0]+12]=okay
+        CursorImg[p1[1]-11:p1[1]+12,p1[0]-11:p1[0]+12]=okay
 
 def selectedColor(distance,rows,cols):
-    global toolHight,offset,shift,ToolAnimInterval,p2
+    global toolHight,offset,shift,ToolAnimInterval,p1
     # print(rows-toolHight)
     # print(cols)
     selectedcolor=-1
-    if distance>60 and p2[1]>(rows-toolHight) and  p2[0]>=offset and p2[0]<=(cols-offset) :
+    if distance>60 and p1[1]>(rows-toolHight) and  p1[0]>=offset and p1[0]<=(cols-offset) :
 
         if shift==5 :
             #print("start up Animation")                
@@ -90,7 +90,7 @@ def selectedColor(distance,rows,cols):
             t.start()
 
         elif shift==toolHight :                
-            selectedcolor=int((p2[0]-offset)/toolHight)
+            selectedcolor=int((p1[0]-offset)/toolHight)
             #print("selected color "+str(selectedcolor))
 
     elif shift==toolHight :
@@ -271,12 +271,12 @@ while True:
                 endArc=0
     
     #check if the user changed the drawing backgroud
-    if dist> 50 and p2[0]>600 :
-        if p2[1]<=120:
+    if dist> 50 and p1[0]>600 :
+        if p1[1]<=120:
             NewBackground=0
-        elif p2[1]<=240:
+        elif p1[1]<=240:
             NewBackground=1
-        elif p2[1]<=360:
+        elif p1[1]<=360:
             NewBackground=2
         else:
             NewBackground=3
@@ -342,6 +342,8 @@ while True:
     
 
     cv2.imshow("Touchless Drawing Application", application)
+    frame=cv2.resize(frame, (0, 0), fx=0.8, fy=0.8)
+    cv2.imshow("Frame", frame)
 
     key = cv2.waitKey(1) & 0xFF
     # if the 'q' key is pressed, stop the loop
